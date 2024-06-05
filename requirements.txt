@@ -1,0 +1,16 @@
+langchain_core
+python-dotenv
+streamlit
+langchain_community
+bs4
+beautifulsoup4
+groq
+langchain-groq
+pypdf
+langchain-chroma
+arxiv
+wikipedia
+langchainhub
+sentence_transformers
+PyPDF2
+langsmith
