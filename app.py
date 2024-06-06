@@ -11,12 +11,15 @@ from langchain.agents import create_tool_calling_agent
 from langchain.agents import AgentExecutor
 from langchain_community.utilities import ArxivAPIWrapper, WikipediaAPIWrapper
 from langchain_community.tools import ArxivQueryRun, WikipediaQueryRun
+from langchain.utilities.tavily_search import TavilySearchAPIWrapper
+from langchain_community.tools.tavily_search import TavilySearchResults
 
 from dotenv import load_dotenv
 
 load_dotenv()
 groq_api_key=os.getenv("GROQ_API_KEY")
 os.environ["cohere_api_key"] = os.getenv("COHERE_API_KEY")
+os.environ["TAVILY_API_KEY"] =os.getenv("TAVILY_API_KEY")
 os.environ["LANGCHAIN_TRACING_V2"]='true'
 os.environ["LANGCHAIN_API_KEY"]=os.getenv("LANGCHAIN_API_KEY")
 
@@ -61,9 +64,15 @@ def main():
                 retriever=get_vector_store(text_chunks) 
                 print(retriever)
                 #Retriever Tool
-                doc_retriever = create_retriever_tool(retriever,"document related queries","Searches and returns excerpts from the document")
+                doc_retriever = create_retriever_tool(retriever,"Document Retriever Tool","A versatile tool designed for efficiently locating and extracting relevant information from the documents provided by the user. It is ideal for gathering comprehensive insights and specific data from user-supplied documents.")
                 tools=[doc_retriever]
+                print(doc_retriever)
                 st.success("Done")
+
+    #Tavily Search
+    search = TavilySearchAPIWrapper()
+    tavily=TavilySearchResults(name="tavily",api_wrapper=search)
+    tools.append(tavily)               
 
     #Wikipedia
     api_wrapper=WikipediaAPIWrapper(top_k_results=1,doc_content_chars_max=500)
@@ -77,17 +86,16 @@ def main():
 
     prompt_agent = ChatPromptTemplate.from_messages([
     ("system", "You are Aura, a personal companion and your duty is to help students to study and excel in their academics. Use the provided documents to answer the questions."),
+    ("system", "While answerng to any query, you should choose the tools wisely. Don't search everything in wikipedia or other tools. First try to answer the query with the information,you already possess. Then only you should go and use the different tools. Also mention the tool which you have used for getting the result"),
     ("placeholder", "{chat_history}"),
     ("human", "{input}"),
     ("placeholder", "{agent_scratchpad}")])
 
-    print(tools)
     agent = create_tool_calling_agent(llm, tools, prompt_agent)
     agent_executor = AgentExecutor(agent=agent, tools=tools,verbose=True)
-    print(agent_executor)
 
     if "messages" not in st.session_state:
-        st.session_state.messages = [{"role": "system", "content": "You are a virtual assistant that helps students to study and excel in their academics"}]
+        st.session_state.messages = []
 
     for message in st.session_state.messages:
         if message["role"] != "system":
@@ -101,14 +109,25 @@ def main():
 
         with st.chat_message("assistant"):
             # Capture the invoked response and tool usage
-            response = agent_executor.invoke({
-                        "input": prompt,
-                        "chat-history": [
-                            {"role": m["role"], "content": m["content"]}
-                            for m in st.session_state.messages
-                        ]
-                    })
-            hello='''response = llm.invoke(
+            try:
+                response = agent_executor.invoke({
+                            "input": prompt,
+                            "chat-history": [
+                                {"role": m["role"], "content": m["content"]}
+                                for m in st.session_state.messages
+                            ]
+                        })
+                content_value=response['output']
+                print(response)
+            except Exception as e:
+                print(e)
+                content_value = "I'm sorry, but I couldn't generate a response."
+            
+            st.markdown(content_value)
+        
+        st.session_state.messages.append({"role": "assistant", "content": content_value})
+
+        hello='''response = llm.invoke(
                 input=[
                     {"role": m["role"], "content": m["content"]}
                     for m in st.session_state.messages
@@ -117,10 +136,6 @@ def main():
             # Extract the 'content' value
             content_value = next((item[1] for item in response if item[0] == 'content'), None)
             '''
-            print(response)
-            content_value=response['output']
-            st.markdown(content_value)
-        st.session_state.messages.append({"role": "assistant", "content": content_value})
-
+        
 if __name__=="__main__":
     main()
