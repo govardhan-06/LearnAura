@@ -1,29 +1,30 @@
-# LearnAura
+# LearnAura README
 
 ## Introduction
-**LearnAura** is an AI-powered academic companion designed to assist students in their studies by answering queries using various tools and resources. The application processes uploaded PDF documents to retrieve relevant information and uses multiple APIs to provide comprehensive responses to user queries.
+**LearnAura** is an AI-powered academic companion designed to assist students in their studies by answering queries using various tools and resources. The application processes uploaded PDF documents to extract text and utilizes machine learning models and APIs to provide comprehensive responses to user queries.
 
 ## Features
 - **PDF Processing**: Upload and process multiple PDF documents to extract text.
-- **Text Chunking**: Split extracted text into manageable chunks for efficient processing.
-- **Vector Store**: Create a vector store from text chunks using Cohere embeddings and Chroma.
+- **Vector Store**: Create a vector store from text chunks using Cohere embeddings and FAISS indexing for efficient document retrieval.
 - **Tool Integration**: Utilize various tools and APIs including:
-  - **Document Retriever Tool**
-  - **Tavily Search**
-  - **Wikipedia Query**
-  - **Arxiv Query**
+  - **PDF Retriever Tool**: Retrieve information from uploaded PDF documents.
+  - **Tavily Search**: Search tool for retrieving relevant information from the Tavily database.
+  - **Wikipedia Query**: Query Wikipedia for information.
+  - **Arxiv Query**: Query the Arxiv database for academic papers.
 - **Interactive Chat Interface**: Engage with the chatbot to ask questions and receive detailed answers.
 
 ## Technologies and Frameworks Used
 - **Streamlit**: For building the web application interface.
 - **LangChain**: Provides the core functionalities for creating the chatbot and integrating various tools.
   - **LangChain Groq**: For integrating the Groq large language model.
-  - **LangChain Chroma**: For creating and managing vector stores.
   - **LangChain Cohere**: For generating embeddings using Cohere's models.
-  - **LangChain Core**: For creating prompts and agents.
   - **LangChain Community**: For integrating community-contributed tools like Arxiv and Wikipedia wrappers.
 - **PyPDF2**: For reading and extracting text from PDF documents.
+- **FAISS**: For efficient similarity search and vector storage.
 - **dotenv**: For managing environment variables securely.
+
+## Model Used
+LearnAura employs the **LLaMA3-70B-8192** model for generating nuanced and contextually relevant answers. This model is integrated using the LangChain Groq library, allowing for seamless interaction with the chatbot interface and various tools.
 
 ## Installation
 1. Clone the repository:
@@ -47,7 +48,6 @@
    ```
 
 ## Usage
-
 1. Run the application:
    ```bash
    streamlit run app.py
@@ -60,7 +60,6 @@
 4. Interact with LearnAura through the chat interface. Ask questions and get responses based on the uploaded documents and other integrated tools.
 
 ## License
-
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
 
 ## Contributing
