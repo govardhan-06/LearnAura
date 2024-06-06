@@ -14,3 +14,4 @@ langchainhub
 sentence_transformers
 PyPDF2
 langsmith
+langchain-cohere
