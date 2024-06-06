@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 from langchain_groq import ChatGroq
-from langchain_chroma import Chroma
+from langchain_community.vectorstores import FAISS
 from langchain_cohere import CohereEmbeddings
 from PyPDF2 import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -23,7 +23,7 @@ os.environ["TAVILY_API_KEY"] =os.getenv("TAVILY_API_KEY")
 os.environ["LANGCHAIN_TRACING_V2"]='true'
 os.environ["LANGCHAIN_API_KEY"]=os.getenv("LANGCHAIN_API_KEY")
 
-llm=ChatGroq(temperature=0, groq_api_key=groq_api_key, model_name="llama3-70b-8192")
+llm=ChatGroq(temperature=0.3, groq_api_key=groq_api_key, model_name="llama3-70b-8192")
 
 #RAG
 def get_pdf_text(pdf_docs):
@@ -44,15 +44,22 @@ def get_text_chunks(docs):
 
 def get_vector_store(chunks):
     embeddings = CohereEmbeddings(model="embed-english-light-v3.0")
-    vector_store=Chroma.from_texts(chunks,embeddings)
+    vector_store=FAISS.from_texts(chunks,embeddings)
+    vector_store.save_local("FAISS_index")
+
+def retriever_agent():
+    embeddings = CohereEmbeddings(model="embed-english-light-v3.0")
+    vector_store=FAISS.load_local("FAISS_index",embeddings, allow_dangerous_deserialization=True)
     retriever=vector_store.as_retriever()
-    return retriever
+    #Retriever Tool
+    doc_retriever = create_retriever_tool(retriever,"PDF Retriever Tool","Use this tool whenever the user queries about the pdf document or the uploaded pdf document")
+    return doc_retriever
 
 def main():
     #Chatbot UI
     st.title("LearnAura")
-    global tools
     tools=[]
+    text_chunks=''
 
     with st.sidebar:
         st.title("Menu:")
@@ -61,13 +68,13 @@ def main():
             with st.spinner("Processing..."):
                 raw_text = get_pdf_text(pdf_docs)
                 text_chunks = get_text_chunks(raw_text)
-                retriever=get_vector_store(text_chunks) 
-                print(retriever)
-                #Retriever Tool
-                doc_retriever = create_retriever_tool(retriever,"Document Retriever Tool","A versatile tool designed for efficiently locating and extracting relevant information from the documents provided by the user. It is ideal for gathering comprehensive insights and specific data from user-supplied documents.")
-                tools=[doc_retriever]
-                print(doc_retriever)
+                get_vector_store(text_chunks)
                 st.success("Done")
+
+    #Document Retriever
+    if text_chunks:
+        doc_retriever=retriever_agent()
+        tools.append(doc_retriever)
 
     #Tavily Search
     search = TavilySearchAPIWrapper()
@@ -84,9 +91,16 @@ def main():
     arxiv=ArxivQueryRun(api_wrapper=arxiv_wrapper)
     tools.append(arxiv)
 
-    prompt_agent = ChatPromptTemplate.from_messages([
+    print(tools)
+    prompt_agent = """ChatPromptTemplate.from_messages([
     ("system", "You are Aura, a personal companion and your duty is to help students to study and excel in their academics. Use the provided documents to answer the questions."),
-    ("system", "While answerng to any query, you should choose the tools wisely. Don't search everything in wikipedia or other tools. First try to answer the query with the information,you already possess. Then only you should go and use the different tools. Also mention the tool which you have used for getting the result"),
+    ("system", "While answerng to any query, you should choose the tools wisely. Don't search everything in wikipedia or other tools. First try to answer the query with the information,you already possess. Then only you should go and use the different tools. Also you must use 'PDF Document Retriever Tool' whenever user queries regarding the documents"),
+    ("placeholder", "{chat_history}"),
+    ("human", "{input}"),
+    ("placeholder", "{agent_scratchpad}")])"""
+
+    prompt_agent = ChatPromptTemplate.from_messages([
+    ("system", "You are Aura, a personal companion and your duty is to help students to study and excel in their academics. Please provide the correct info and if you don't know, just reply that you don't know. Also whenever the user asks about any documents, you need to use PDF Retriever Tool"),
     ("placeholder", "{chat_history}"),
     ("human", "{input}"),
     ("placeholder", "{agent_scratchpad}")])
@@ -127,15 +141,5 @@ def main():
         
         st.session_state.messages.append({"role": "assistant", "content": content_value})
 
-        hello='''response = llm.invoke(
-                input=[
-                    {"role": m["role"], "content": m["content"]}
-                    for m in st.session_state.messages
-                ],
-            )
-            # Extract the 'content' value
-            content_value = next((item[1] for item in response if item[0] == 'content'), None)
-            '''
-        
 if __name__=="__main__":
     main()

@@ -7,7 +7,7 @@ beautifulsoup4
 groq
 langchain-groq
 pypdf
-langchain-chroma
+faiss-cpu
 arxiv
 wikipedia
 langchainhub
