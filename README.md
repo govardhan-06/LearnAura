@@ -28,7 +28,7 @@
 ## Installation
 1. Clone the repository:
    ```bash
-   [git clone https://github.com/your-repo/LearnAura.git](https://github.com/govardhan-06/LearnAura.git)
+   git clone https://github.com/your-repo/LearnAura.git
    cd LearnAura
    ```
 
