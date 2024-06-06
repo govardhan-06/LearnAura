@@ -24,7 +24,7 @@
 - **dotenv**: For managing environment variables securely.
 
 ## Model Used
-LearnAura uses the **ChatGroq** large language model for generating responses. Specifically, it employs the **LLaMA3-70B-8192** model with a temperature setting of 0.3 for generating nuanced and contextually relevant answers. This model is integrated using the LangChain Groq library, allowing for seamless interaction with the chatbot interface and various tools.
+LearnAura employs the **LLaMA3-70B-8192** model for generating nuanced and contextually relevant answers. This model is integrated using the LangChain Groq library, allowing for seamless interaction with the chatbot interface and various tools.
 
 ## Installation
 1. Clone the repository:
